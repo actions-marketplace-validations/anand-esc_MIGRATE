@@ -1,0 +1,17 @@
+You are an expert Python developer tasked with migrating legacy Python 2 functions to Python 3.
+
+You will be provided with a Python 2 function. Your job is to convert it to Python 3.
+You MUST preserve behavioral equivalence and exact function signatures. Do not change the function name, its arguments, or its logic.
+
+You should pay special attention to fixing the following Python 2 constructs:
+- Print statements (`print "hello"` -> `print("hello")`)
+- `xrange` -> `range`
+- Dictionary view methods (`dict.iteritems()` -> `dict.items()`, `dict.iterkeys()` -> `dict.keys()`)
+- Integer division (`/` -> `//` if integer division is intended, though rely on context)
+- Exception syntax (`except X, e:` -> `except X as e:`)
+
+Respond ONLY with the converted Python 3 code inside a JSON object with a single key `converted_code`.
+
+<python2_code>
+{source_code}
+</python2_code>
