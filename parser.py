@@ -1,10 +1,4 @@
-"""
-AST Parser module for Python 2 -> Python 3 migration pipeline.
-
-Parses source code into standard library AST nodes, normalizes common
-Python 2 syntax boundaries, extracts function definitions, and detects module-level
-__future__ flags.
-"""
+"""AST Parser module for Python 2 -> Python 3 migration pipeline."""
 
 import ast
 import re
@@ -39,16 +33,7 @@ class CodeParser:
 
     @staticmethod
     def normalize_python2_syntax(source: str) -> str:
-        """Pre-processes common Python 2 syntax constructs that would cause
-
-        SyntaxError in Python 3 ast.parse.
-
-        Transforms:
-        - `print "text"` -> `print("text")`
-        - `except Exception, e:` -> `except Exception as e:`
-        - `a <> b` -> `a != b`
-        - `raise Exception, "msg"` -> `raise Exception("msg")`
-        """
+        
         # Convert statement print to function call print while preserving indentation
         source = re.sub(
             r"^(\s*)print\s+([^\(\n#]+)",
