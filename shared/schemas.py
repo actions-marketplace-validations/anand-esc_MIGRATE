@@ -13,6 +13,6 @@ class ConversionResult(BaseModel):
     """Output of your converter+critic — input to Pritam's verifier."""
     function_id: str
     converted_code: str
-    critic_verdict: Literal["clean", "leftover_py2_syntax", "signature_mismatch"]
+    critic_verdict: Literal["clean", "leftover_py2_syntax", "signature_mismatch", "conversion_failed"]
     critic_notes: str
     tokens_used: int
