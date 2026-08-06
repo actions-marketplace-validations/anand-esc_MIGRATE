@@ -1,0 +1,16 @@
+# harness/Dockerfile.py2
+# Sandbox for running the ORIGINAL legacy code.
+# python:2.7-slim is EOL/frozen (no security updates) - that's fine here,
+# it only ever runs isolated, with --network=none, for comparison purposes.
+
+FROM python:2.7-slim
+
+WORKDIR /app
+
+# Harness is identical in both containers
+COPY harness/harness.py /app/harness.py
+
+# The legacy source tree (swap this COPY line to point at the real repo slice)
+COPY legacy/ /app/legacy/
+
+ENTRYPOINT ["python", "harness.py"]

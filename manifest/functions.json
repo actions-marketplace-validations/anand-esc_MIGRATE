@@ -1,0 +1,33 @@
+{
+  "functions": [
+    {
+      "name": "calculate_total",
+      "legacy_module": "legacy.billing",
+      "new_module": "converted.billing",
+      "args": [
+        { "name": "items", "type": "list[dict]" },
+        { "name": "tax_rate", "type": "float", "range": [0, 0.3] }
+      ],
+      "returns": "float"
+    },
+    {
+      "name": "normalize_name",
+      "legacy_module": "legacy.utils",
+      "new_module": "converted.utils",
+      "args": [
+        { "name": "raw_name", "type": "str" }
+      ],
+      "returns": "str"
+    },
+    {
+      "name": "apply_discount",
+      "legacy_module": "legacy.utils",
+      "new_module": "converted.utils",
+      "args": [
+        { "name": "price", "type": "float", "range": [0, 1000] },
+        { "name": "discount_percent", "type": "int", "range": [0, 100] }
+      ],
+      "returns": "float"
+    }
+  ]
+}

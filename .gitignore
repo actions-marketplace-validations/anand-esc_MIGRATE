@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.hypothesis/
+reports/*.json
+reports/*.md
