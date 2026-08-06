@@ -1,0 +1,45 @@
+{
+  "function": "normalize_name",
+  "cases": [
+    {
+      "args": [
+        "\u00a6"
+      ]
+    },
+    {
+      "args": [
+        ""
+      ]
+    },
+    {
+      "args": [
+        "U\ud9cc\udda1"
+      ]
+    },
+    {
+      "args": [
+        "manifest"
+      ]
+    },
+    {
+      "args": [
+        "\udaf3\ude46\u00d7."
+      ]
+    },
+    {
+      "args": [
+        "[g\u00c6#\u00166\u00d7"
+      ]
+    },
+    {
+      "args": [
+        ""
+      ]
+    },
+    {
+      "args": [
+        " "
+      ]
+    }
+  ]
+}
