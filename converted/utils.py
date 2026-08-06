@@ -15,4 +15,4 @@ def apply_discount(price, discount_percent):
     This should be caught by the verifier as a 'mismatch' whenever
     price * discount_percent isn't a clean multiple of 100.
     """
-    return price - (price * discount_percent // 100)
+    return price - (price * discount_percent / 100)

@@ -15,15 +15,14 @@ jobs:
           python-version: '3.12'
 
       - name: Install orchestrator dependencies
-        run: pip install -r fixture_verifier/requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run unit tests
         run: |
-          python fixture_verifier/tests/test_classifier.py
-          python fixture_verifier/tests/test_fixture_gen.py
+          python tests/test_classifier.py
+          python tests/test_fixture_gen.py
 
       - name: Run fixture verification pipeline
-        working-directory: fixture_verifier
         run: python orchestrator/verify.py
 
       - name: Upload verification report
@@ -31,4 +30,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: verification-report
-          path: fixture_verifier/reports/
+          path: reports/
