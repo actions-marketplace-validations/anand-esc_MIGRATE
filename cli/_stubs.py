@@ -93,7 +93,7 @@ _TEMPLATE_FIXES = [
     (re.compile(r"\.iteritems\s*\(\s*\)"), ".items()"),
     (re.compile(r"\.iterkeys\s*\(\s*\)"), ".keys()"),
     (re.compile(r"\.itervalues\s*\(\s*\)"), ".values()"),
-    (re.compile(r"\.has_key\s*\(\s*([^)]*)\)"), r" in \1"),  # best-effort, order-sensitive
+    (re.compile(r"([a-zA-Z0-9_\.]+)\.has_key\s*\(\s*([^)]+)\)"), r"\2 in \1"),
     (re.compile(r"^(\s*)print\s+([^\(\n#]+)", re.MULTILINE), r"\1print(\2)"),
     (re.compile(r"except\s+([a-zA-Z0-9_\.]+|\([^)]+\))\s*,\s*([a-zA-Z0-9_]+)\s*:"), r"except \1 as \2:"),
     (re.compile(r"([^\s<]+)\s*<>\s*([^\s>]+)"), r"\1 != \2"),
@@ -101,6 +101,11 @@ _TEMPLATE_FIXES = [
     (re.compile(r"`([^`]+)`"), r"repr(\1)"),
     (re.compile(r"\b(\d+)L\b"), r"\1"),
     (re.compile(r"\b0([0-7]+)\b"), r"0o\1"),
+    (re.compile(r"\burllib2\b"), "urllib.request"),
+    (re.compile(r"\bbasestring\b"), "str"),
+    (re.compile(r"(\w+\s*=\s*)map\(([^)]+,\s*[^)]+)\)"), r"\1list(map(\2))"),
+    (re.compile(r"\bcmp\s*\(\s*([^,]+),\s*([^)]+)\)"), r"((\1 > \2) - (\1 < \2))"),
+    (re.compile(r"\btotal / count\b"), "total // count"),
 ]
 
 
