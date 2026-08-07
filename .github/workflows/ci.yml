@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install legacy-pyconvert
+        run: pip install -e .
+
+      # Pritam's verifier runs original vs converted code in these two
+      # sandbox images. They aren't wired into the pipeline yet (stub
+      # verifier doesn't touch Docker), but pulling them now means CI
+      # already exercises image availability and this step needs zero
+      # changes when the real verifier lands.
+      - name: Pull sandbox images
+        run: |
+          docker pull python:2.7-slim
+          docker pull python:3.12-slim
+
+      # STUB-FIRST NOTE (update as real modules land): this step never
+      # gates the job on pass/fail/needs-review counts
+      # (--no-fail-on-mismatch). Day 1-2 of a hackathon is exactly when
+      # counts fluctuate as classifier/converter/verifier are being wired
+      # in one at a time -- gating internal CI on that would make "green"
+      # meaningless. The composite action in action.yml is where
+      # fail-on-mismatch enforcement happens for repos that install this
+      # tool (see action.yml + ARCHITECTURE.md "Status semantics").
+      - name: Run pipeline against demo slice
+        run: |
+          legacy-pyconvert convert demo/legacy_slice --out build --no-fail-on-mismatch
+
+      - name: Publish workflow summary
+        if: always()
+        run: |
+          legacy-pyconvert report --out build --format github >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-results
+          path: build/summary.json

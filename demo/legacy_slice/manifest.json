@@ -1,0 +1,81 @@
+{
+  "source_repo": "https://github.com/python/cpython",
+  "source_ref": "2.7",
+  "source_file": "Lib/urllib.py",
+  "license": "PSF License (CPython stdlib)",
+  "selected_at": "2026-08-07",
+  "selection_notes": "Bounded, real-world Python 2 stdlib module (urllib.py, removed/split apart in Python 3's urllib.parse/urllib.request). Module-level free functions were chosen over class methods so each unit is independently classifiable/convertible without needing surrounding class state.",
+  "functions": [
+    {
+      "name": "unwrap",
+      "expected_tag": "template_match",
+      "why": "Pure string slicing, no py2-only syntax or stdlib surface at all."
+    },
+    {
+      "name": "splittype",
+      "expected_tag": "template_match",
+      "why": "Regex-cache-via-global pattern; mechanical, no semantic drift risk."
+    },
+    {
+      "name": "splithost",
+      "expected_tag": "template_match",
+      "why": "Same shape as splittype."
+    },
+    {
+      "name": "splitport",
+      "expected_tag": "template_match",
+      "why": "Regex-based split, no py2-only constructs. Also exercised as a dependency of proxy_bypass_environment."
+    },
+    {
+      "name": "splitquery",
+      "expected_tag": "template_match",
+      "why": "Mechanical regex split."
+    },
+    {
+      "name": "splittag",
+      "expected_tag": "template_match",
+      "why": "Mechanical regex split."
+    },
+    {
+      "name": "splitattr",
+      "expected_tag": "template_match",
+      "why": "No regex, pure list slicing. Trivial baseline case."
+    },
+    {
+      "name": "splitvalue",
+      "expected_tag": "template_match",
+      "why": "Mechanical regex split."
+    },
+    {
+      "name": "unquote",
+      "expected_tag": "llm_needed",
+      "why": "Branches on _is_unicode(s) vs plain str; py2's str/unicode split collapses into py3's single str type. A syntax-only conversion changes behavior for byte-string input, so this needs semantic understanding, not just a substitution rule."
+    },
+    {
+      "name": "quote",
+      "expected_tag": "llm_needed",
+      "why": "Flagship example for why behavioral diffing beats a syntax-only pass: `str(bytearray(xrange(256)))` builds a byte->str escaping table using py2's str/bytes-are-the-same-type assumption. A naive xrange->range fix still RUNS under Python 3 but silently builds the WRONG table. Only a sandboxed diff against real fixtures catches this; 'it parses and runs' does not."
+    },
+    {
+      "name": "urlencode",
+      "expected_tag": "llm_needed",
+      "why": "Uses the old-style `raise Type, msg, tb` three-argument raise syntax, a SyntaxError under Python 3 (not just a deprecation) that requires rewriting to `raise Type(msg).with_traceback(tb)`. Also has the same str/unicode branching as unquote."
+    },
+    {
+      "name": "getproxies_environment",
+      "expected_tag": "template_match",
+      "why": "No py2-only syntax, but the two-pass 'prefer lowercase env var' logic is a good template case that still needs a real fixture-based diff to catch an off-by-one-pass translation bug."
+    },
+    {
+      "name": "proxy_bypass_environment",
+      "expected_tag": "template_match",
+      "why": "Depends on splitport and getproxies_environment from this same slice, exercising intra-slice function dependencies rather than isolated leaf functions."
+    }
+  ],
+  "expected_tag_summary": {
+    "template_match": 9,
+    "llm_needed": 4,
+    "unsupported": 0
+  },
+  "unsupported_note": "No function in this slice was hand-picked as 'unsupported' (e.g. use of `exec` statements, old-style classes with __metaclass__, or calls into stdlib modules removed outright in Python 3 like htmllib/rfc822). The classifier should still be free to tag any of the above as unsupported if its static analysis disagrees with this manifest's expectation — this list documents intent for test-writing, not a hard override."
+}

@@ -29,22 +29,17 @@ def run_critic(state: dict) -> dict:
     if "ANTHROPIC_API_KEY" in os.environ:
         from langchain_anthropic import ChatAnthropic
         llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
+        structured_llm = llm.with_structured_output(CriticOutput, include_raw=True)
+        chain = prompt | structured_llm
+        result = chain.invoke({
+            "source_code": fn.source_code,
+            "converted_code": converted_code
+        })
     else:
-        from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-        from langchain_core.messages import AIMessage
-        import json
-        llm = FakeMessagesListChatModel(responses=[AIMessage(content=json.dumps({
-            "critic_verdict": "clean",
-            "critic_notes": ""
-        }))])
-
-    structured_llm = llm.with_structured_output(CriticOutput, include_raw=True)
-    chain = prompt | structured_llm
-    
-    result = chain.invoke({
-        "source_code": fn.source_code,
-        "converted_code": converted_code
-    })
+        result = {
+            "parsed": CriticOutput(critic_verdict="clean", critic_notes=""),
+            "raw": None
+        }
     
     parsed = result.get("parsed")
     raw = result.get("raw")

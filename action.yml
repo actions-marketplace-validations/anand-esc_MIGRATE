@@ -1,0 +1,164 @@
+name: "Legacy Python Equivalence Converter"
+description: "Classifies, converts, and verifies Python 2 functions against a sandboxed behavioral-equivalence diff before reporting pass/fail/needs-review."
+author: "Deploy or Die"
+
+inputs:
+  target-path:
+    description: "Path to Python 2 source within the repo (file or directory)."
+    required: true
+  fail-on-mismatch:
+    description: "Fail the job if any function comes back a clear mismatch. Set to 'false' to report without blocking merges."
+    required: false
+    default: "true"
+
+outputs:
+  pass-count:
+    description: "Number of functions that exact-matched original behavior."
+    value: ${{ steps.set-outputs.outputs.pass-count }}
+  fail-count:
+    description: "Number of functions with a clear mismatch or a failed conversion."
+    value: ${{ steps.set-outputs.outputs.fail-count }}
+  needs-review-count:
+    description: "Number of functions with an ambiguous verdict or a critic-flagged concern."
+    value: ${{ steps.set-outputs.outputs.needs-review-count }}
+
+# NOTE for the calling workflow: the PR-comment step below needs
+# `permissions: pull-requests: write` (and `contents: read`) granted by
+# whatever job uses this action -- a composite action can't declare its
+# own permissions.
+#
+# Why composite, not a Docker container action: GitHub-hosted runners
+# already have a Docker daemon on the host, which the verifier's sandbox
+# containers (python:2.7-slim / python:3.12-slim) need directly. A Docker
+# container action would run this action's own steps nested inside its
+# own container, so reaching the host's Docker daemon would require
+# Docker-in-Docker with privileged access. Composite steps run directly
+# on the runner, so `docker run` here works exactly like it does in
+# Pritam's local testing -- no extra privilege needed.
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install legacy-pyconvert
+      shell: bash
+      run: pip install "${{ github.action_path }}"
+
+    - name: Pull sandbox images
+      shell: bash
+      run: |
+        docker pull python:2.7-slim
+        docker pull python:3.12-slim
+
+    # Classifies every function (Om's classifier), routes template_match
+    # and llm_needed functions through Suryansh's converter+critic, then
+    # hands every function whose conversion didn't outright fail to
+    # Pritam's verifier. This is ONE step, not four, because the agreed
+    # verifier contract is a single call --
+    # verify(original, converted) -> exact_match | clear_mismatch | ambiguous
+    # -- the python:2.7-slim and python:3.12-slim sandbox runs happen
+    # *inside* that call, not as separately invokable stages. See
+    # ARCHITECTURE.md "Data flow" for the full breakdown.
+    #
+    # Exit code carries the product's status semantics directly (see
+    # ARCHITECTURE.md "Status semantics"): 0 when every function is a
+    # pass or needs-review, non-zero only when fail-on-mismatch is true
+    # AND at least one function is a clear mismatch or a failed
+    # conversion. A needs-review verdict never fails this step.
+    - name: Classify, convert, and verify
+      id: pipeline
+      shell: bash
+      run: |
+        if [ "${{ inputs.fail-on-mismatch }}" = "true" ]; then
+          FLAG=--fail-on-mismatch
+        else
+          FLAG=--no-fail-on-mismatch
+        fi
+        legacy-pyconvert convert "${{ inputs.target-path }}" --out build "$FLAG"
+
+    - name: Publish workflow summary
+      if: ${{ !cancelled() }}
+      shell: bash
+      run: legacy-pyconvert report --out build --format github >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Set outputs
+      id: set-outputs
+      if: ${{ !cancelled() }}
+      shell: python
+      run: |
+        import json
+        import os
+
+        with open("build/summary.json", encoding="utf-8") as f:
+            counts = json.load(f)["counts"]
+
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            f.write(f"pass-count={counts['pass']}\n")
+            f.write(f"fail-count={counts['fail']}\n")
+            f.write(f"needs-review-count={counts['needs_review']}\n")
+
+    # Ambiguous/needs-review verdicts must never be silently invisible
+    # just because the job passed -- post a PR comment and a warning
+    # annotation so they stay visible without blocking every PR that
+    # touches legacy code. Clear mismatches get an error annotation here
+    # too, on top of whatever the exit code above already did to the job.
+    - name: Comment on PR
+      if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = JSON.parse(fs.readFileSync('build/summary.json', 'utf8'));
+          const { pass, fail, needs_review, total } = summary.counts;
+
+          if (needs_review > 0) {
+            core.warning(`${needs_review} function(s) came back ambiguous or critic-flagged -- needs human review.`);
+          }
+          if (fail > 0) {
+            core.error(`${fail} function(s) failed conversion or had a clear behavioral mismatch.`);
+          }
+
+          const reviewRows = summary.functions
+            .filter(fn => fn.status !== 'pass')
+            .map(fn => `| \`${fn.function_name}\` | ${fn.classification} | ${fn.status.toUpperCase()} | ${(fn.detail || '').replace(/\|/g, '\\|')} |`)
+            .join('\n');
+
+          const marker = '<!-- legacy-pyconvert-summary -->';
+          const body = [
+            marker,
+            '### Legacy Python Equivalence Converter',
+            '',
+            `Target: \`${{ inputs.target-path }}\``,
+            '',
+            `| pass | needs review | fail | total |`,
+            `|---|---|---|---|`,
+            `| ${pass} | ${needs_review} | ${fail} | ${total} |`,
+            '',
+            reviewRows ? '| function | classification | status | detail |\n|---|---|---|---|\n' + reviewRows : '_All functions passed -- nothing needs review._',
+          ].join('\n');
+
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          const existing = comments.find(c => c.body.includes(marker));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }

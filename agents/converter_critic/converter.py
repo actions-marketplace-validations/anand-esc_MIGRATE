@@ -26,21 +26,15 @@ def run_converter(state: dict) -> dict:
     if "ANTHROPIC_API_KEY" in os.environ:
         from langchain_anthropic import ChatAnthropic
         llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
+        structured_llm = llm.with_structured_output(ConverterOutput, include_raw=True)
+        chain = prompt | structured_llm
+        result = chain.invoke({"source_code": fn.source_code})
     else:
         # Fallback fake for standalone test if missing key
-        from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-        from langchain_core.messages import AIMessage
-        import json
-        llm = FakeMessagesListChatModel(responses=[AIMessage(content=json.dumps({"converted_code": "def mock_func():\\n    print(\"Mock!\")"}))])
-
-    # Bind the schema to ensure JSON output and include raw for token extraction
-    structured_llm = llm.with_structured_output(ConverterOutput, include_raw=True)
-    
-    # Create the chain
-    chain = prompt | structured_llm
-    
-    # Run the chain
-    result = chain.invoke({"source_code": fn.source_code})
+        result = {
+            "parsed": ConverterOutput(converted_code="def mock_func():\n    print(\"Mock!\")"),
+            "raw": None
+        }
     
     parsed = result.get("parsed")
     raw = result.get("raw")

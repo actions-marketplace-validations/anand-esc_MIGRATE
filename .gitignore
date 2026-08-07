@@ -1,7 +1,6 @@
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
+build/
 .pytest_cache/
-.hypothesis/
-reports/*.json
-reports/*.md
