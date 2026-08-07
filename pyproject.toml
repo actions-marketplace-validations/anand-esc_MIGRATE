@@ -1,6 +1,6 @@
 [project]
 name = "legacy-pyconvert"
-version = "0.1.1"
+version = "0.1.2"
 description = "Deploy or Die: convert legacy Python 2 to Python 3 and prove behavioral equivalence via sandboxed diffing."
 requires-python = ">=3.10"
 dependencies = [

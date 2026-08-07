@@ -36,7 +36,7 @@ from shared.schemas import (
 
 _DEF_RE = re.compile(r"^def\s+(\w+)\s*\(", re.MULTILINE)
 
-_UNSUPPORTED_MARKERS = ("exec ", "exec(", "__metaclass__")
+_UNSUPPORTED_MARKERS = ()
 _LLM_NEEDED_MARKERS = (
     "unicode(",
     "_is_unicode",
@@ -101,6 +101,7 @@ _TEMPLATE_FIXES = [
     (re.compile(r"`([^`]+)`"), r"repr(\1)"),
     (re.compile(r"\b(\d+)L\b"), r"\1"),
     (re.compile(r"\b0([0-7]+)\b"), r"0o\1"),
+    (re.compile(r"^(\s*)exec\s+([^#\n]+)", re.MULTILINE), r"\1exec(\2)"),
     (re.compile(r"\burllib2\b"), "urllib.request"),
     (re.compile(r"\bbasestring\b"), "str"),
     (re.compile(r"(\w+\s*=\s*)map\(([^)]+,\s*[^)]+)\)"), r"\1list(map(\2))"),
