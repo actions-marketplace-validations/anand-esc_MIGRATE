@@ -35,9 +35,9 @@ jobs:
       # meaningless. The composite action in action.yml is where
       # fail-on-mismatch enforcement happens for repos that install this
       # tool (see action.yml + ARCHITECTURE.md "Status semantics").
-      - name: Run pipeline against demo slice
+      - name: Run pipeline against legacy code
         run: |
-          legacy-pyconvert convert demo/legacy_slice --out build --no-fail-on-mismatch
+          legacy-pyconvert convert legacy --out build --no-fail-on-mismatch
 
       - name: Publish workflow summary
         if: always()
