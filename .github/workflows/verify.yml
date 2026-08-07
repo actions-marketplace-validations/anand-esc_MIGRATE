@@ -7,12 +7,15 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install orchestrator dependencies
         run: pip install -r requirements.txt
@@ -29,5 +32,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: verification-report
+          name: verification-report-py${{ matrix.python-version }}
           path: reports/

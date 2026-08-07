@@ -6,6 +6,13 @@ requires-python = ">=3.10"
 dependencies = [
     "click>=8.1",
     "pydantic>=2.0",
+    "hypothesis>=6.165.1",
+    "deepdiff>=9.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
 ]
 
 [project.scripts]
@@ -17,3 +24,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["cli", "shared"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
