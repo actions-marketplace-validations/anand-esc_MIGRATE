@@ -19,7 +19,14 @@ import json
 import os
 import sys
 
-from docker_manager import build_images, run_in_container, IMAGE_PY2, IMAGE_PY3
+# Defensive: guarantees this file's own directory is importable even if
+# invoked in a way that doesn't auto-add it (e.g. some IDE "run" configs,
+# or `python -m` from a different working directory). Running it the
+# documented way (`python orchestrator/verify.py` from repo root) already
+# works without this, but this removes the ambiguity entirely.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from docker_manager import build_images, run_in_container, IMAGE_PY2, IMAGE_PY3, DockerNotReachableError
 from classifier import classify_function
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -63,7 +70,14 @@ def run_function(func_spec):
 
 def main():
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    build_images(repo_root=ROOT)
+
+    try:
+        build_images(repo_root=ROOT)
+    except DockerNotReachableError as e:
+        # Distinct exit code (2) from "verification found real bugs" (1) -
+        # this is an infrastructure problem, not a conversion problem.
+        print("\nDocker is not usable in this environment:\n{0}".format(e))
+        sys.exit(2)
 
     functions = load_manifest()
     report = {"functions": []}
@@ -106,7 +120,14 @@ def write_markdown_report(report):
                         c["case_id"], c["classification"], c["py2_result"], c["py3_result"], c["detail"]
                     )
                 )
-    with open(os.path.join(REPORTS_DIR, "verification_report.md"), "w") as f:
+    # Explicitly write UTF-8. On Windows the default codepage (e.g. cp1252)
+    # cannot encode the arbitrary Unicode characters hypothesis may draw
+    # into fixtures (e.g. U+2584 block chars, CJK, etc.) — without this the
+    # whole pipeline dies with a UnicodeEncodeError at report-writing time
+    # instead of producing a report and a clean exit code.
+    with open(
+        os.path.join(REPORTS_DIR, "verification_report.md"), "w", encoding="utf-8"
+    ) as f:
         f.writelines(lines)
 
 

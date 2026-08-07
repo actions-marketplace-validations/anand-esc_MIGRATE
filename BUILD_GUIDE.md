@@ -8,11 +8,18 @@ before anything else, once on a machine with Docker.
 
 ## Where to start, why, what
 
-**Start with Docker, not the fixtures.** Everything else in this
-component is pure Python logic, already tested. The one genuinely unknown
-risk is whether `python:2.7-slim` pulls and runs cleanly in the actual
-build environment (confirmed publicly available, but "available" and
-"works smoothly on your machine right now" are different things).
+**Start with the environment, not the fixtures.** Run
+`python scripts/diagnose_environment.py` first — it checks the Python
+interpreter, confirms both dependencies are actually importable from that
+interpreter, and checks whether Docker is reachable, all in one shot.
+This catches the two most common blockers (interpreter mismatch, Docker
+daemon not running) before spending any time on the actual pipeline.
+
+**Then prove Docker works.** Everything else in this component is pure
+Python logic, already tested. The one genuinely unknown risk is whether
+`python:2.7-slim` pulls and runs cleanly in the actual build environment
+(confirmed publicly available, but "available" and "works smoothly on
+your machine right now" are different things).
 De-risk that first, hour one, before building anything on top of it.
 
 **Why this order:** the deck's own five-checkpoint gate rewards a green
@@ -26,6 +33,13 @@ runs end to end against the real legacy repo slice, produces
 green on the latest commit.
 
 ## Step-by-step
+
+### 0. Diagnose the environment (5 min)
+```bash
+python scripts/diagnose_environment.py
+```
+Confirms the interpreter, package locations, and Docker reachability all
+in one pass. Fix anything it flags before continuing.
 
 ### 1. Prove Docker works (15–20 min)
 ```bash
@@ -77,11 +91,17 @@ everything from here is pointing it at the real repo instead of the demo.
 - Re-run `fixture_gen.py`, commit the frozen fixtures, re-run `verify.py`
 
 ### 5. Wire into the team's actual CI (30 min)
-The workflow file here lives at `fixture_verifier/.github/workflows/verify.yml`
-for packaging purposes — **it needs to move to the repo root's
-`.github/workflows/`** once merged with teammates' code, and the
-`working-directory: fixture_verifier` line adjusted to wherever this
-folder actually lands in the final repo tree.
+The workflow file here (`fixture_verifier/.github/workflows/verify.yml`)
+is written assuming `fixture_verifier/` **is** the repo root — that's
+correct as-is if this ships as its own repo, and it's exactly the
+structure it was tested against.
+
+If instead this folder gets nested as a subfolder inside a larger merged
+team repo (e.g. `team-repo/fixture_verifier/...`), two things need to
+change when moving `.github/workflows/verify.yml` to the team repo's root:
+add a `working-directory: fixture_verifier` to each `run:` step, and
+prefix `requirements.txt`/`reports/` paths with `fixture_verifier/`.
+Confirm which structure the team is actually using before merging.
 
 ### 6. Document for the non-negotiables
 This component is a strong candidate for the **custom agent** requirement
@@ -106,11 +126,14 @@ entry:
 |---|---|
 | `manifest/functions.json` | Input contract: which functions, what types, what modules |
 | `orchestrator/fixture_gen.py` | Host-side. Generates + freezes test inputs. Run once, not in CI. |
-| `orchestrator/docker_manager.py` | Builds images, runs each sandbox via subprocess, handles timeouts |
+| `orchestrator/docker_manager.py` | Builds images, runs each sandbox via subprocess, preflight Docker daemon check, handles timeouts |
 | `harness/harness.py` | Runs INSIDE both containers. Calls the target function per fixture case. |
 | `harness/Dockerfile.py2` / `.py3` | Sandbox definitions |
+| `legacy/__init__.py`, `converted/__init__.py` | Required for Python 2.7 to import these as packages |
 | `orchestrator/classifier.py` | Normalizes + diffs outputs, classifies match/mismatch/ambiguous |
 | `orchestrator/verify.py` | Main entrypoint — ties it all together, writes the report |
+| `scripts/diagnose_environment.py` | Interpreter/dependency/Docker diagnostic — run this first when something doesn't work |
+| `pyproject.toml` | Project root marker + dependency declaration for IDE tooling |
 | `tests/` | Unit tests for classifier and fixture generator (no Docker needed) |
 
 ## Known limitations (be upfront about these, don't get caught by them live)
@@ -126,6 +149,50 @@ entry:
   "safe" — that's a feature (matches the deck's human-in-the-loop rule),
   but budget review time for it rather than being surprised the pipeline
   isn't 100% green on the first real run.
+
+## Troubleshooting (from a real round of testing)
+
+**"Sandbox images build" / "Harness isolation" / "Full pipeline" / "Exit
+code" checks blocked:**
+1. Run `python scripts/diagnose_environment.py` first — it checks Docker
+   daemon reachability directly and tells you immediately if that's the
+   blocker, rather than guessing from a build failure.
+2. `verify.py` now runs a preflight Docker check before attempting
+   anything else. If Docker isn't reachable, it exits with code `2`
+   (distinct from `1`, which means "Docker worked, but found a real
+   mismatch") and prints the specific reason: CLI missing, daemon not
+   running, or a permissions issue.
+3. On Windows with a WSL2 Docker backend: make sure Docker Desktop is
+   running AND WSL integration is enabled for your distro (Docker
+   Desktop → Settings → Resources → WSL Integration).
+4. On Linux: if you get a permissions error, your user likely isn't in
+   the `docker` group (`sudo usermod -aG docker $USER`, then log out/in).
+
+**IDE shows unresolved imports for `hypothesis` / `deepdiff` even after
+installing:**
+This is almost always an interpreter mismatch, not a missing package —
+`pip install` and your IDE's language server can be looking at two
+different Python installs. Run this from the exact terminal you used to
+`pip install`:
+```bash
+python scripts/diagnose_environment.py
+```
+It prints `sys.executable` (the interpreter packages were actually
+installed into) and where `hypothesis`/`deepdiff` physically live. Then
+in your IDE: `Cmd/Ctrl+Shift+P` → "Python: Select Interpreter" → confirm
+the selected path matches `sys.executable` from the script output exactly.
+If it doesn't, select the correct one — that alone resolves it.
+If you're on Windows using Docker via WSL2 and installed packages inside
+a WSL shell, make sure your IDE window is connected via the **WSL remote
+extension** (bottom-left green icon in VS Code/Cursor), not opened as a
+native Windows window — otherwise the Windows-side interpreter can't see
+anything installed inside WSL, no matter how many times it's reinstalled.
+
+**Fixed bug (already applied in this version):** `legacy/` and
+`converted/` were missing `__init__.py`. Python 3 tolerates this
+(implicit namespace packages), but **Python 2.7 does not** — the py2.7
+container would fail to `import legacy.billing` with an `ImportError`.
+Both directories now have an explicit `__init__.py`.
 
 ## Prompts for the agent (if delegating remaining wiring to Cline/Claude)
 

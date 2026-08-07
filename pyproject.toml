@@ -1,0 +1,23 @@
+[project]
+name = "fixture-verifier"
+version = "0.1.0"
+description = "Legacy-to-Python conversion verifier: generates fixtures, runs legacy vs converted code in isolated sandboxes, classifies output equivalence."
+requires-python = ">=3.11"
+dependencies = [
+    "hypothesis>=6.165.1",
+    "deepdiff>=9.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# No build-system table on purpose: this project is run directly with
+# `python orchestrator/verify.py`, not installed as a package. Adding
+# [build-system] would need a src-layout restructure this doesn't use.
+# This file exists primarily so IDEs (Pylance/Pyright/PyCharm) reliably
+# detect the project root and its declared dependencies.

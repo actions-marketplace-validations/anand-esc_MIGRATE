@@ -69,6 +69,25 @@ def test_structural_difference_is_ambiguous_not_mismatch():
     assert c == "ambiguous", detail
 
 
+def test_py3_sharp_s_title_expansion_matches_py2():
+    # Python 2 leaves 'ß' unchanged in .title(), Python 3 expands it to 'Ss'.
+    # This is a benign cross-version difference: the values must compare equal.
+    c, detail = classify_case(case(result="ß"), case(result="Ss"))
+    assert c == "match", detail
+
+
+def test_near_zero_different_values_is_mismatch():
+    # DeepDiff's relative tolerance masks 0 vs 2.5e-307; the near-zero rule
+    # must catch this genuine behavioral difference (the // vs / bug).
+    c, detail = classify_case(case(result=0), case(result=2.5e-307))
+    assert c == "mismatch", detail
+
+
+def test_near_zero_identical_values_match():
+    c, detail = classify_case(case(result=0), case(result=0))
+    assert c == "match", detail
+
+
 def test_classify_function_mismatched_lengths_raises():
     try:
         classify_function("f", [case()], [case(), case(case_id=1)])

@@ -38,6 +38,23 @@ def test_boundary_cases_included():
     assert "" in args_only, "empty string boundary case missing"
 
 
+def test_boundary_cases_respect_range():
+    # Boundary values (e.g. -1 from BOUNDARY_VALUES) must be clamped into the
+    # manifest's per-argument range, so out-of-domain inputs aren't generated.
+    func_spec = {
+        "name": "apply_discount",
+        "args": [
+            {"name": "price", "type": "float", "range": [0, 1000]},
+            {"name": "discount_percent", "type": "int", "range": [0, 100]},
+        ],
+    }
+    cases = generate_cases_for_function(func_spec, n=3)
+    for c in cases:
+        price, discount = c["args"]
+        assert 0 <= price <= 1000, price
+        assert 0 <= discount <= 100, discount
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     failed = 0

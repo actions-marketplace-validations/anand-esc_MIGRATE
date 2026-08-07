@@ -95,16 +95,30 @@ def generate_cases_for_function(func_spec, n=N_GENERATED_CASES, seed=42):
     # each argument position, plus a full boundary sweep for single-arg
     # functions. Keeps this simple rather than a full cartesian product,
     # which would blow up fast for multi-arg functions.
+    #
+    # Boundary values are clamped to the manifest's per-argument "range"
+    # hint when present. Without this, e.g. a numeric arg scoped to [0,100]
+    # would still get boundary inputs like -1 (from BOUNDARY_VALUES),
+    # producing out-of-domain fixtures that the real code would never see.
     boundary_cases = []
     max_boundaries = max(len(BOUNDARY_VALUES[t]) for t in arg_types)
     for i in range(max_boundaries):
         args = []
-        for t in arg_types:
+        for spec, t in zip(arg_specs, arg_types):
             values = BOUNDARY_VALUES[t]
-            args.append(values[i] if i < len(values) else values[-1])
+            value = values[i] if i < len(values) else values[-1]
+            args.append(_clamp_to_range(value, spec))
         boundary_cases.append({"args": args})
 
     return generated + boundary_cases
+
+
+def _clamp_to_range(value, arg_spec):
+    """Clamp a numeric boundary value into the manifest's range, if present."""
+    if "range" not in arg_spec or arg_spec["type"] not in ("int", "float"):
+        return value
+    lo, hi = arg_spec["range"]
+    return max(lo, min(hi, value))
 
 
 def main():
