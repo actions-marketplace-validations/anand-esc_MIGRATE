@@ -1,5 +1,5 @@
 name: "Legacy Python Equivalence Converter"
-description: "Classifies, converts, and verifies Python 2 functions against a sandboxed behavioral-equivalence diff before reporting pass/fail/needs-review."
+description: "Classifies, converts, and verifies Python 2 functions for behavioral equivalence before reporting."
 author: "Deploy or Die"
 
 branding:
