@@ -2,6 +2,10 @@ name: "Legacy Python Equivalence Converter"
 description: "Classifies, converts, and verifies Python 2 functions against a sandboxed behavioral-equivalence diff before reporting pass/fail/needs-review."
 author: "Deploy or Die"
 
+branding:
+  icon: 'code'
+  color: 'blue'
+
 inputs:
   target-path:
     description: "Path to Python 2 source within the repo (file or directory)."
