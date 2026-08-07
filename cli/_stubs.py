@@ -36,7 +36,7 @@ from shared.schemas import (
 
 _DEF_RE = re.compile(r"^def\s+(\w+)\s*\(", re.MULTILINE)
 
-_UNSUPPORTED_MARKERS = ("exec ", "exec(", "__metaclass__", "<>")
+_UNSUPPORTED_MARKERS = ("exec ", "exec(", "__metaclass__")
 _LLM_NEEDED_MARKERS = (
     "unicode(",
     "_is_unicode",
@@ -94,6 +94,13 @@ _TEMPLATE_FIXES = [
     (re.compile(r"\.iterkeys\s*\(\s*\)"), ".keys()"),
     (re.compile(r"\.itervalues\s*\(\s*\)"), ".values()"),
     (re.compile(r"\.has_key\s*\(\s*([^)]*)\)"), r" in \1"),  # best-effort, order-sensitive
+    (re.compile(r"^(\s*)print\s+([^\(\n#]+)", re.MULTILINE), r"\1print(\2)"),
+    (re.compile(r"except\s+([a-zA-Z0-9_\.]+|\([^)]+\))\s*,\s*([a-zA-Z0-9_]+)\s*:"), r"except \1 as \2:"),
+    (re.compile(r"([^\s<]+)\s*<>\s*([^\s>]+)"), r"\1 != \2"),
+    (re.compile(r"^(\s*)raise\s+([a-zA-Z0-9_\.]+)\s*,\s*([^\n#]+)", re.MULTILINE), r"\1raise \2(\3)"),
+    (re.compile(r"`([^`]+)`"), r"repr(\1)"),
+    (re.compile(r"\b(\d+)L\b"), r"\1"),
+    (re.compile(r"\b0([0-7]+)\b"), r"0o\1"),
 ]
 
 
