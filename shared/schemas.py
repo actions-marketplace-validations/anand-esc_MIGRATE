@@ -53,3 +53,4 @@ class FunctionOutcome(BaseModel):
     critic_verdict: Optional[str] = None
     verifier_verdict: Optional[VerifierVerdict] = None
     detail: Optional[str] = None
+    converted_code: Optional[str] = None

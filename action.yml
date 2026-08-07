@@ -100,6 +100,13 @@ runs:
             f.write(f"fail-count={counts['fail']}\n")
             f.write(f"needs-review-count={counts['needs_review']}\n")
 
+    - name: Upload Converted Files
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: converted-python3-files
+        path: build/converted_functions/
+
     # Ambiguous/needs-review verdicts must never be silently invisible
     # just because the job passed -- post a PR comment and a warning
     # annotation so they stay visible without blocking every PR that

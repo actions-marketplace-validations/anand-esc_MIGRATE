@@ -173,15 +173,24 @@ def _run_one_function(fn: ClassifiedFunction) -> FunctionOutcome:
         critic_verdict=result.critic_verdict,
         verifier_verdict=verifier_result.verdict,
         detail=verifier_result.details or result.critic_notes,
+        converted_code=result.converted_code,
     )
 
 
-def _run_pipeline(files: List[Path]) -> List[FunctionOutcome]:
+def _run_pipeline(files: List[Path], out_dir: Path) -> List[FunctionOutcome]:
     outcomes: List[FunctionOutcome] = []
+    converted_dir = out_dir / "converted_functions"
+    converted_dir.mkdir(parents=True, exist_ok=True)
+    
     for path in files:
         functions = _classify_source(str(path))
         for fn in functions:
-            outcomes.append(_run_one_function(fn))
+            outcome = _run_one_function(fn)
+            outcomes.append(outcome)
+            if outcome.converted_code:
+                safe_name = f"{path.stem}_{fn.function_id}.py"
+                (converted_dir / safe_name).write_text(outcome.converted_code, encoding="utf-8")
+                
     return outcomes
 
 
@@ -246,7 +255,7 @@ def convert(target: Path, out_dir: Path, fail_on_mismatch: bool):
         click.echo(f"No .py files found under {target}", err=True)
         sys.exit(2)
 
-    outcomes = _run_pipeline(files)
+    outcomes = _run_pipeline(files, out_dir)
     summary = _write_summary(out_dir, str(target), outcomes)
     _print_human_summary(summary)
 
