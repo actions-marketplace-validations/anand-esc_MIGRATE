@@ -104,7 +104,7 @@ _TEMPLATE_FIXES = [
     (re.compile(r"\burllib2\b"), "urllib.request"),
     (re.compile(r"\bbasestring\b"), "str"),
     (re.compile(r"(\w+\s*=\s*)map\(([^)]+,\s*[^)]+)\)"), r"\1list(map(\2))"),
-    (re.compile(r"\bcmp\s*\(\s*([^,]+),\s*([^)]+)\)"), r"((\1 > \2) - (\1 < \2))"),
+    (re.compile(r"\bcmp\s*\(\s*([^,)\s]+)\s*,\s*([^)\s]+)\s*\)"), r"((\1 > \2) - (\1 < \2))"),
     (re.compile(r"\btotal / count\b"), "total // count"),
 ]
 
