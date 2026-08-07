@@ -10,6 +10,10 @@ inputs:
     description: "Fail the job if any function comes back a clear mismatch. Set to 'false' to report without blocking merges."
     required: false
     default: "true"
+  auto-commit:
+    description: "Automatically commit the migrated files back to the repository."
+    required: false
+    default: "true"
 
 outputs:
   pass-count:
@@ -105,7 +109,14 @@ runs:
       if: ${{ !cancelled() }}
       with:
         name: converted-python3-files
-        path: build/converted_functions/
+        path: migrated/
+
+    - name: Commit migrated files
+      if: ${{ !cancelled() && inputs.auto-commit == 'true' }}
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "chore: migrate Python 2 code to Python 3"
+        file_pattern: 'migrated/**'
 
     # Ambiguous/needs-review verdicts must never be silently invisible
     # just because the job passed -- post a PR comment and a warning
