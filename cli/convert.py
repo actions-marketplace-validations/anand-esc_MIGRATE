@@ -197,6 +197,14 @@ def _run_pipeline(target: Path, files: List[Path], out_dir: Path) -> List[Functi
                 file_content = file_content.replace(fn.source_code, outcome.converted_code, 1)
                 has_changes = True
 
+        # Apply module-level fixes for things outside functions (like imports)
+        from cli._stubs import _TEMPLATE_FIXES
+        for pattern, replacement in _TEMPLATE_FIXES:
+            new_content = pattern.sub(replacement, file_content)
+            if new_content != file_content:
+                file_content = new_content
+                has_changes = True
+
         if has_changes:
             if target.is_dir():
                 try:
