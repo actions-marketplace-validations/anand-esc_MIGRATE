@@ -37,7 +37,16 @@ from shared.schemas import (
 _DEF_RE = re.compile(r"^def\s+(\w+)\s*\(", re.MULTILINE)
 
 _UNSUPPORTED_MARKERS = ()
-_LLM_NEEDED_MARKERS = ()
+_LLM_NEEDED_MARKERS = (
+    "unicode(",
+    "_is_unicode",
+    "xrange(",
+    "bytearray(xrange",
+    "isinstance(v, str)",
+    "filter(",
+    "isinstance(var, basestring)",
+    "isinstance(var, unicode)"
+)
 _RAISE3_RE = re.compile(r"raise\s+\w+(\.\w+)*\s*,\s*.+,\s*\w+\s*$", re.MULTILINE)
 
 

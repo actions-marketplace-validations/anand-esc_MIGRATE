@@ -79,6 +79,9 @@ runs:
     - name: Classify, convert, and verify
       id: pipeline
       shell: bash
+      env:
+        GEMINI_API_KEY: ${{ env.GEMINI_API_KEY }}
+        NVIDIA_API_KEY: ${{ env.NVIDIA_API_KEY }}
       run: |
         if [ "${{ inputs.fail-on-mismatch }}" = "true" ]; then
           FLAG=--fail-on-mismatch
