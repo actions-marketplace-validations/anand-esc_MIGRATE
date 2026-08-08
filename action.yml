@@ -108,6 +108,13 @@ runs:
             f.write(f"fail-count={counts['fail']}\n")
             f.write(f"needs-review-count={counts['needs_review']}\n")
 
+    - name: Upload Test Summaries
+      uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: test-summaries
+        path: build/
+
     - name: Upload Converted Files
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
