@@ -1,0 +1,23 @@
+# .clinerules — Pipeline Constitution for MIGRATE
+# Mirrors AGENTS.md rules. Included for compatibility with automated checkpoint scripts.
+# The authoritative source is AGENTS.md; this file must never contradict it.
+
+## Identity
+This project is the MIGRATE Legacy Python Equivalence Converter.
+Agents: Om (Classifier), Suryansh (Converter+Critic), Pritam (Verifier), Agent D (CLI Orchestrator).
+
+## Must Always
+- Always run in a sandbox before reporting success.
+- Always treat the sandbox diff as the authoritative behavioral signal.
+- Always surface every function in the report (build/summary.json).
+- Always preserve a critic concern — needs_review survives even on clean sandbox.
+- Always keep needs-review visible without blocking merges.
+
+## Must Never
+- Never silently mark an ambiguous or failed result as passing.
+- Never send a conversion_failed function to the verifier.
+- Never call the LLM for a function that isn't classified llm_needed.
+- Never call the converter/critic for a function classified unsupported.
+- Never let a single function's conversion_failed halt the batch.
+- Never let internal CI pass/fail counts gate the internal build.
+- Never redefine shared/schemas.py unilaterally to route around a teammate's output shape.
