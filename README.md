@@ -18,15 +18,20 @@ name: Migrate Python 2 to 3
 
 on:
   push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   run-migration:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       
-      - name: Run Equivalence Converter
-        uses: anand-esc/MIGRATE@v1.0.0
+      - name: Run Legacy Equivalence Converter
+        uses: anand-esc/MIGRATE@main
         with:
           target-path: '.'
           fail-on-mismatch: 'true'
